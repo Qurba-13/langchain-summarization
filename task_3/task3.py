@@ -4,26 +4,48 @@ from langchain_openai import AzureOpenAIEmbeddings
 from langchain_community.vectorstores import FAISS
 import os
 from dotenv import load_dotenv
-from task2 import chain_3
+from task_2.task2 import chain_3
 load_dotenv()
 
 file_location="ai_intro.txt"
-load_file=TextLoader(file_location,encoding="utf-8")
-content=load_file.load()
+def load_document(file_location:str):
+    load_file=TextLoader(file_location,encoding="utf-8")
+    return load_file.load()
+
+
+# content=load_file.load()
 # print(content)
-text_splitting=RecursiveCharacterTextSplitter(chunk_size=200,chunk_overlap=20)
-documents=text_splitting.split_documents(content)
+def text_split(documents):
+    text_splitting=RecursiveCharacterTextSplitter(chunk_size=200,chunk_overlap=20)
+    return text_splitting.split_documents(documents)
+
+# documents=text_splitting.split_documents(content)
 #converting the chunks into vectors
-azure_embedding= AzureOpenAIEmbeddings(
+def embeddings():
+    return AzureOpenAIEmbeddings(
     azure_endpoint=os.getenv("ENDPOINT_URL"),
     api_key=os.getenv("AZURE_OPENAI_API_KEY"),
     api_version=os.getenv("API_VERSION"),
     model=os.getenv("EMBEDDING_DEPLOYMENT_NAME")
 )
 #storing the vector
-store_vector=FAISS.from_documents(documents,azure_embedding)
+def store_vector(documents):
+    get_embeddings=embeddings()
+    return FAISS.from_documents(documents,get_embeddings)
+
+
 #retriever
-retriever=store_vector.as_retriever()
+def create_retriever(file_location:str):
+    docs=load_document(file_location)
+    split_docs=text_split(docs)
+    vector_store=store_vector(split_docs)
+    return vector_store.as_retriever()
+
+
+retriever=create_retriever(file_location)
+
+
+#testing
 query="AI milestones"
 retrieved_document=retriever.invoke(query)
 # for i in retrieved_document:
